@@ -54,7 +54,7 @@ static const std::vector<std::string> g_curveVariant = {
     "bspline", "hermite", "catmull-rom", "linear", "cones"};
 
 static const std::vector<std::string> g_renderers = {
-    "scivis", "pathtracer", "ao", "debug"};
+    "scivis", "pathtracer", "mis_pathtracer", "ao", "debug"};
 
 static const std::vector<std::string> g_debugRendererTypes = {"eyeLight",
     "primID",

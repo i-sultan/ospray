@@ -91,7 +91,7 @@ cpp::Group Curves::buildGroup() const
 
   cpp::GeometricModel model(geom);
 
-  if (rendererType == "pathtracer") {
+  if (rendererType == "pathtracer" || rendererType == "mis_pathtracer") {
     // create glass material and assign to geometry
     cpp::Material glassMaterial(rendererType.c_str(), "thinGlass");
     glassMaterial.setParam("attenuationDistance", 1.f);

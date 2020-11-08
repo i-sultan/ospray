@@ -115,7 +115,7 @@ cpp::GeometricModel createGeometricModel(
 {
   cpp::GeometricModel geometricModel(geo);
 
-  if (rendererType == "pathtracer" || rendererType == "scivis"
+  if (rendererType == "pathtracer" || rendererType == "mis_pathtracer" || rendererType == "scivis"
       || rendererType == "ao") {
     cpp::Material objMaterial(rendererType, "obj");
     objMaterial.setParam("kd", kd);

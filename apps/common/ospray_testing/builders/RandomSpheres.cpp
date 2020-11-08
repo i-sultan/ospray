@@ -78,7 +78,7 @@ cpp::Group Spheres::buildGroup() const
 
   model.setParam("color", cpp::CopiedData(s_colors));
 
-  if (rendererType == "pathtracer") {
+  if (rendererType == "pathtracer" || rendererType == "mis_pathtracer") {
     // create glass material and assign to geometry
     cpp::Material glassMaterial(rendererType.c_str(), "thinGlass");
     glassMaterial.setParam("attenuationDistance", 0.2f);
