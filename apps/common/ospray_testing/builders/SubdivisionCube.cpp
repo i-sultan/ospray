@@ -114,7 +114,7 @@ cpp::Group SubdivisionCube::buildGroup() const
 
   cpp::GeometricModel model(geometry);
 
-  if (rendererType == "pathtracer" || rendererType == "scivis"
+  if (rendererType == "pathtracer" || rendererType == "mis_pathtracer" || rendererType == "scivis"
       || rendererType == "ao") {
     cpp::Material material(rendererType, "obj");
     material.commit();

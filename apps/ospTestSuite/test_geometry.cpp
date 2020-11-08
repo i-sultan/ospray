@@ -35,7 +35,7 @@ void SpherePrecision::SetUp()
   } else if (rendererType == "ao") {
     renderer.setParam("aoSamples", 16);
     renderer.setParam("aoIntensity", 1.f);
-  } else if (rendererType == "pathtracer") {
+  } else if (rendererType == "pathtracer" || rendererType == "mis_pathtracer") {
     renderer.setParam("maxPathLength", 2);
   }
 

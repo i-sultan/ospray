@@ -16,7 +16,7 @@ void LightTest::SetUp()
   Base::SetUp();
 
   // set common renderer parameter
-  if (rendererType == "pathtracer")
+  if (rendererType == "pathtracer" || rendererType == "mis_pathtracer")
     renderer.setParam("maxPathLength", 1);
   if (rendererType == "scivis")
     renderer.setParam("shadows", true);

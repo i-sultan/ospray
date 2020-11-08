@@ -194,7 +194,7 @@ cpp::Instance Builder::makeGroundPlane(const box3f &bounds) const
 
   cpp::GeometricModel plane(planeGeometry);
 
-  if (rendererType == "pathtracer" || rendererType == "scivis"
+  if (rendererType == "pathtracer" || rendererType == "mis_pathtracer" || rendererType == "scivis"
       || rendererType == "ao") {
     cpp::Material material(rendererType, "obj");
     material.commit();
