@@ -12,6 +12,7 @@ int main(int argc, const char *argv[])
   initializeOSPRay(argc, argv, false);
 
   bool denoiser = ospLoadModule("denoiser") == OSP_NO_ERROR;
+  ospLoadModule("kumrah");
 
   auto glfwOSPRayWindow =
       make_unique<GLFWOSPRayWindow>(vec2i(1024, 768), denoiser);
