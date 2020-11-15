@@ -486,6 +486,8 @@ void GLFWOSPRayWindow::buildUI()
       rendererType = OSPRayRendererType::SCIVIS;
     else if (rendererTypeStr == "pathtracer")
       rendererType = OSPRayRendererType::PATHTRACER;
+    else if (rendererTypeStr == "mis_pathtracer")
+      rendererType = OSPRayRendererType::MISPATHTRACER;
     else if (rendererTypeStr == "ao")
       rendererType = OSPRayRendererType::AO;
     else if (rendererTypeStr == "debug")
@@ -544,6 +546,7 @@ void GLFWOSPRayWindow::buildUI()
       pixelFilterType = OSPPixelFilterTypes::OSP_PIXELFILTER_BLACKMAN_HARRIS;
 
     rendererPT.setParam("pixelFilter", pixelFilterType);
+    rendererMIS.setParam("pixelFilter", pixelFilterType);
     rendererSV.setParam("pixelFilter", pixelFilterType);
     rendererAO.setParam("pixelFilter", pixelFilterType);
     rendererDBG.setParam("pixelFilter", pixelFilterType);
@@ -555,6 +558,7 @@ void GLFWOSPRayWindow::buildUI()
   static int spp = 1;
   if (ImGui::SliderInt("pixelSamples", &spp, 1, 64)) {
     rendererPT.setParam("pixelSamples", spp);
+    rendererMIS.setParam("pixelSamples", spp);
     rendererSV.setParam("pixelSamples", spp);
     rendererAO.setParam("pixelSamples", spp);
     rendererDBG.setParam("pixelSamples", spp);
@@ -567,6 +571,7 @@ void GLFWOSPRayWindow::buildUI()
         std::pow(bgColorSRGB.y, 2.2f),
         std::pow(bgColorSRGB.z, 2.2f)); // approximate
     rendererPT.setParam("backgroundColor", bgColor);
+    rendererMIS.setParam("backgroundColor", bgColor);
     rendererSV.setParam("backgroundColor", bgColor);
     rendererAO.setParam("backgroundColor", bgColor);
     rendererDBG.setParam("backgroundColor", bgColor);
@@ -577,11 +582,13 @@ void GLFWOSPRayWindow::buildUI()
   if (ImGui::Checkbox("backplate texture", &useTestTex)) {
     if (useTestTex) {
       rendererPT.setParam("map_backplate", backplateTex);
+      rendererMIS.setParam("map_backplate", backplateTex);
       rendererSV.setParam("map_backplate", backplateTex);
       rendererAO.setParam("map_backplate", backplateTex);
       rendererDBG.setParam("map_backplate", backplateTex);
     } else {
       rendererPT.removeParam("map_backplate");
+      rendererMIS.removeParam("map_backplate");
       rendererSV.removeParam("map_backplate");
       rendererAO.removeParam("map_backplate");
       rendererDBG.removeParam("map_backplate");
@@ -589,7 +596,8 @@ void GLFWOSPRayWindow::buildUI()
     addObjectToCommit(renderer->handle());
   }
 
-  if (rendererType == OSPRayRendererType::PATHTRACER) {
+  if (rendererType == OSPRayRendererType::PATHTRACER ||
+      rendererType == OSPRayRendererType::MISPATHTRACER) {
     if (ImGui::Checkbox("renderSunSky", &renderSunSky)) {
       if (renderSunSky) {
         sunSky.setParam("direction", sunDirection);
@@ -708,6 +716,12 @@ void GLFWOSPRayWindow::refreshScene(bool resetCamera)
   switch (rendererType) {
   case OSPRayRendererType::PATHTRACER: {
     renderer = &rendererPT;
+    if (renderSunSky)
+      world.setParam("light", cpp::CopiedData(sunSky));
+    break;
+  }
+  case OSPRayRendererType::MISPATHTRACER: {
+    renderer = &rendererMIS;
     if (renderSunSky)
       world.setParam("light", cpp::CopiedData(sunSky));
     break;

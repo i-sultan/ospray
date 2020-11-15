@@ -19,6 +19,7 @@ enum class OSPRayRendererType
 {
   SCIVIS,
   PATHTRACER,
+  MISPATHTRACER,
   AO,
   DEBUGGER,
   OTHER
@@ -74,6 +75,7 @@ class GLFWOSPRayWindow
   // OSPRay objects managed by this class
   cpp::Renderer rendererPT{"pathtracer"};
   cpp::Renderer rendererSV{"scivis"};
+  cpp::Renderer rendererMIS{"mis_pathtracer"};
   cpp::Renderer rendererAO{"ao"};
   cpp::Renderer rendererDBG{"debug"};
   cpp::Renderer *renderer{nullptr};
