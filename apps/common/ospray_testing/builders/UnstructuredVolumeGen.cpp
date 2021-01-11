@@ -313,11 +313,11 @@ cpp::Group UnstructuredVolumeGen::buildGroup() const
 
     cpp::GeometricModel isoModel(isoGeom);
 
-    if (rendererType == "pathtracer" || rendererType == "scivis"
+    if (rendererType == "pathtracer" || rendererType == "mis_pathtracer" || rendererType == "scivis"
         || rendererType == "ao") {
       cpp::Material mat(rendererType, "obj");
       mat.setParam("kd", vec3f(0.8f));
-      if (rendererType == "pathtracer" || rendererType == "scivis")
+      if (rendererType == "pathtracer" || rendererType == "mis_pathtracer" || rendererType == "scivis")
         mat.setParam("ks", vec3f(0.2f));
       mat.commit();
 
