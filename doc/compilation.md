@@ -22,37 +22,35 @@ before you can build OSPRay you need the following prerequisites:
     Linux development tools. To build the interactive tutorials, you
     should also have some version of OpenGL and GLFW.
 -   Additionally you require a copy of the [Intel® SPMD Program Compiler
-    (ISPC)](http://ispc.github.io), version 1.10.0 or later. Please
+    (ISPC)](http://ispc.github.io), version 1.14.1 or later. Please
     obtain a release of ISPC from the [ISPC downloads
     page](https://ispc.github.io/downloads.html). The build system looks
     for ISPC in the `PATH` and in the directory right "next to" the
     checked-out OSPRay sources.^[For example, if OSPRay is in
     `~/Projects/ospray`, ISPC will also be searched in
-    `~/Projects/ispc-v1.12.0-linux`] Alternatively set the CMake
+    `~/Projects/ispc-v1.14.1-linux`] Alternatively set the CMake
     variable `ISPC_EXECUTABLE` to the location of the ISPC compiler.
-    Note: OSPRay is incompatible with ISPC v1.11.0.
--   OSPRay builds on top of the Intel oneAPI Rendering Toolkit common
-    library `rkcommon`. The library provides abstractions for tasking,
-    aligned memory allocation, vector math types, among others. For
-    users who also need to build
-    [rkcommon](https://www.github.com/ospray/rkcommon), we recommend the
-    default the Intel [Threading Building
-    Blocks](https://www.threadingbuildingblocks.org/) (TBB) as tasking
-    system for performance and flexibility reasons. Alternatively you
-    can set CMake variable `RKCOMMON_TASKING_SYSTEM` to `OpenMP` or
-    `Internal`.
--   OSPRay also heavily uses Intel [Embree], installing version 3.8.0 or
-    newer is required. If Embree is not found by CMake its location can
-    be hinted with the variable `embree_DIR`.
+-   OSPRay builds on top of the [Intel oneAPI Rendering Toolkit common
+    library (rkcommon)](https://www.github.com/ospray/rkcommon). The
+    library provides abstractions for tasking, aligned memory
+    allocation, vector math types, among others. For users who also need
+    to build rkcommon, we recommend the default the Intel [Threading
+    Building Blocks (TBB)](https://www.threadingbuildingblocks.org/) as
+    tasking system for performance and flexibility reasons.
+    Alternatively you can set CMake variable `RKCOMMON_TASKING_SYSTEM`
+    to `OpenMP` or `Internal`.
+-   OSPRay also heavily uses Intel [Embree], installing version 3.12.0
+    or newer is required. If Embree is not found by CMake its location
+    can be hinted with the variable `embree_DIR`.
 -   OSPRay also heavily uses Intel [Open VKL](https://www.openvkl.org/),
-    installing version 0.10.0 or newer is required. If Open VKL is not
+    installing version 0.12.0 or newer is required. If Open VKL is not
     found by CMake its location can be hinted with the variable
     `openvkl_DIR`.
--   OSPRay also provides an optional module that adds support for Intel
-    [Open Image Denoise], which is enabled by `OSPRAY_MODULE_DENOISER`.
-    When loaded, this module enables the `denosier` image operation. You
-    may need to hint the location of the library with the CMake variable
-    `OpenImageDenoise_DIR`.
+-   OSPRay also provides an optional module implementing the `denosier`
+    image operation, which is enabled by `OSPRAY_MODULE_DENOISER`. This
+    module requires Intel [Open Image Denoise] in version 1.2.3 or
+    newer. You may need to hint the location of the library with the
+    CMake variable `OpenImageDenoise_DIR`.
 
 Depending on your Linux distribution you can install these dependencies
 using `yum` or `apt-get`. Some of these packages might already be
@@ -75,7 +73,7 @@ Under Mac OS\ X these dependencies can be installed using
 
 Under Windows please directly use the appropriate installers for
 [CMake](https://cmake.org/download/),
-[TBB](https://github.com/01org/tbb/releases),
+[TBB](https://github.com/oneapi-src/oneTBB/releases),
 [ISPC](https://ispc.github.io/downloads.html) (for your Visual Studio
 version) and [Embree](https://github.com/embree/embree/releases/).
 
@@ -122,6 +120,10 @@ BUILD_OIDN_FROM_SOURCE
 
 BUILD_OIDN_VERSION
 : determines which version of Open Image Denoise to pull down.
+
+BUILD_OSPRAY_MODULE_MPI
+: set to ON to build OSPRay's MPI module for data-replicated and
+distributed parallel rendering on multiple nodes.
 
 For the full set of options, run:
 
@@ -184,7 +186,7 @@ way to configure OSPRay and to create the Visual Studio solution files:
     does not exist yet CMake will create it).
 
 -   Click "Configure" and select as generator the Visual Studio version
-    you have (OSPRay needs Visual Studio 14 2015 or newer), for Win64
+    you have (OSPRay needs Visual Studio 15 2017 or newer), for Win64
     (32\ bit builds are not supported by OSPRay), e.g., "Visual Studio 15
     2017 Win64".
 

@@ -13,15 +13,27 @@ export void *uniform SciVisMaterial_create(void *uniform cppE)
 }
 
 export void SciVisMaterial_set(void *uniform _mat,
-    uniform float d,
+    const uniform float d,
     const uniform TextureParam &dMap,
     const uniform vec3f &Kd,
-    const uniform TextureParam &KdMap)
+    const uniform TextureParam &KdMap,
+    const uniform vec3f &Ks,
+    const uniform TextureParam &KsMap,
+    const uniform float &Ns,
+    const uniform TextureParam &NsMap,
+    const uniform vec3f &Tf)
 {
   SciVisMaterial *uniform mat = (SciVisMaterial * uniform) _mat;
+
+  mat->super.type = RENDERER_TYPE_SCIVIS;
 
   mat->d = d;
   mat->dMap = dMap;
   mat->Kd = Kd;
   mat->KdMap = KdMap;
+  mat->Ks = Ks;
+  mat->KsMap = KsMap;
+  mat->Ns = Ns;
+  mat->NsMap = NsMap;
+  mat->Tf = Tf;
 }

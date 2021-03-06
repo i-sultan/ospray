@@ -1,4 +1,4 @@
-// Copyright 2020 Intel Corporation
+// Copyright 2020-2021 Intel Corporation
 // SPDX-License-Identifier: Apache-2.0
 
 #pragma once
@@ -42,10 +42,8 @@ struct OSPRAY_SDK_INTERFACE SunSkyLight : public Light
   virtual utility::Optional<void *> getSecondIE() override;
 
  private:
-  vec3f direction; // direction of the sun
-  float turbidity{3.0f}; // turbidity must be between 1 and 10
-  float albedo; // albedo of the ground
-  vec3f up; // up direction of the sky
+  void processIntensityQuantityType();
+
   std::vector<vec3f> skyImage;
   Texture2D *map{nullptr};
   void *secondLightIE;

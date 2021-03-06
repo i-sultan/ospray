@@ -6,13 +6,12 @@
 class Boxes : public BaseFixture
 {
  public:
-  Boxes(const std::string &s, int ao)
-      : BaseFixture(s, "scivis"), aoSamples(ao)
-  {
-    SetName(s + "/ao_" + std::to_string(ao) + "/scivis");
-  }
+  Boxes(
+      const std::string &n, const std::string &s, const std::string &r, int ao)
+      : BaseFixture(n + s + "/ao_" + std::to_string(ao), s, r), aoSamples(ao)
+  {}
 
-  void SetRendererParameters(cpp::Renderer r)
+  void SetRendererParameters(cpp::Renderer r) override
   {
     r.setParam("aoSamples", aoSamples);
   }
@@ -21,7 +20,12 @@ class Boxes : public BaseFixture
   int aoSamples;
 };
 
-OSPRAY_DEFINE_BENCHMARK(Boxes, "boxes", 0);
-OSPRAY_DEFINE_BENCHMARK(Boxes, "boxes", 1);
-OSPRAY_DEFINE_BENCHMARK(Boxes, "boxes", 16);
-OSPRAY_DEFINE_BENCHMARK(Boxes, "boxes", 256);
+OSPRAY_DEFINE_BENCHMARK(Boxes, "boxes", "ao", 0);
+OSPRAY_DEFINE_BENCHMARK(Boxes, "boxes", "ao", 1);
+OSPRAY_DEFINE_BENCHMARK(Boxes, "boxes", "ao", 16);
+OSPRAY_DEFINE_BENCHMARK(Boxes, "boxes", "ao", 256);
+OSPRAY_DEFINE_BENCHMARK(Boxes, "boxes", "scivis", 0);
+OSPRAY_DEFINE_BENCHMARK(Boxes, "boxes", "scivis", 1);
+OSPRAY_DEFINE_BENCHMARK(Boxes, "boxes", "scivis", 16);
+OSPRAY_DEFINE_BENCHMARK(Boxes, "boxes", "scivis", 256);
+OSPRAY_DEFINE_SETUP_BENCHMARK(Boxes, "boxes", "ao", 256);

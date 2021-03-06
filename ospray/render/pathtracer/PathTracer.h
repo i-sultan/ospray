@@ -1,4 +1,4 @@
-// Copyright 2009-2020 Intel Corporation
+// Copyright 2009-2021 Intel Corporation
 // SPDX-License-Identifier: Apache-2.0
 
 #pragma once
@@ -11,20 +11,14 @@ namespace ospray {
 struct PathTracer : public Renderer
 {
   PathTracer();
-  virtual ~PathTracer() override;
   virtual std::string toString() const override;
   virtual void commit() override;
   virtual void *beginFrame(FrameBuffer *, World *) override;
 
-  void generateGeometryLights(const World &);
-  void destroyGeometryLights();
-
-  // the 'IE's of the XXXLights
-  std::vector<void *> lightArray;
-  // number of GeometryLights at beginning of lightArray
-  size_t geometryLights{0};
+ private:
+  void generateGeometryLights(const World &, std::vector<void *> &);
   bool useGeometryLights{true};
-  OSPTexture bgTexture{nullptr};
+  bool rendererValid{false};
 };
 
 } // namespace ospray

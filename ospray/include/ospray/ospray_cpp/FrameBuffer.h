@@ -1,4 +1,4 @@
-// Copyright 2009-2020 Intel Corporation
+// Copyright 2009-2021 Intel Corporation
 // SPDX-License-Identifier: Apache-2.0
 
 #pragma once
@@ -34,10 +34,7 @@ class FrameBuffer : public ManagedObject<OSPFrameBuffer, OSP_FRAMEBUFFER>
       OSPFrameBufferFormat format = OSP_FB_SRGBA,
       int channels = OSP_FB_COLOR);
 
-  FrameBuffer(const FrameBuffer &copy);
   FrameBuffer(OSPFrameBuffer existing);
-
-  FrameBuffer &operator=(const FrameBuffer &copy);
 
   void resetAccumulation() const;
 
@@ -67,22 +64,9 @@ inline FrameBuffer::FrameBuffer(
   ospObject = ospNewFrameBuffer(size_x, size_y, format, channels);
 }
 
-inline FrameBuffer::FrameBuffer(const FrameBuffer &copy)
-    : ManagedObject<OSPFrameBuffer, OSP_FRAMEBUFFER>(copy.handle())
-{
-  ospRetain(copy.handle());
-}
-
 inline FrameBuffer::FrameBuffer(OSPFrameBuffer existing)
     : ManagedObject<OSPFrameBuffer, OSP_FRAMEBUFFER>(existing)
 {}
-
-inline FrameBuffer &FrameBuffer::operator=(const FrameBuffer &copy)
-{
-  ospObject = copy.ospObject;
-  ospRetain(copy.handle());
-  return *this;
-}
 
 inline void FrameBuffer::resetAccumulation() const
 {
@@ -118,8 +102,9 @@ inline PickResult FrameBuffer::pick(const Renderer &renderer,
     res.instance = Instance(pick.instance);
     res.model = GeometricModel(pick.model);
     res.primID = pick.primID;
-
-    std::memcpy(res.worldPosition, pick.worldPosition, 3 * sizeof(float));
+    res.worldPosition[0] = pick.worldPosition[0];
+    res.worldPosition[1] = pick.worldPosition[1];
+    res.worldPosition[2] = pick.worldPosition[2];
   }
 
   return res;

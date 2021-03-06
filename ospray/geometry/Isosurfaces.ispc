@@ -1,13 +1,13 @@
-// Copyright 2009-2020 Intel Corporation
+// Copyright 2009-2021 Intel Corporation
 // SPDX-License-Identifier: Apache-2.0
 
 // ospray
 #include "common/Ray.ih"
 #include "common/World.ih"
 #include "geometry/Geometry.ih"
-#include "math/box.ih"
-#include "math/vec.ih"
 #include "openvkl/iterator.isph"
+#include "rkcommon/math/box.ih"
+#include "rkcommon/math/vec.ih"
 #include "volume/Volume.ih"
 
 struct Isosurfaces
@@ -71,11 +71,13 @@ void Isosurfaces_intersect_kernel(
   vkl_range1f tRange;
   tRange.lower = ray->t0;
   tRange.upper = ray->t;
+  float time = 0.f;
   uniform unsigned int8 hitIteratorBuffer[VKL_MAX_HIT_ITERATOR_SIZE];
-  iterator = vklInitHitIteratorV(volume->vklVolume,
+  iterator = vklInitHitIteratorV(volume->vklSampler,
       (varying vkl_vec3f *)&ray->org,
       (varying vkl_vec3f *)&ray->dir,
       &tRange,
+      &time,
       self->valueSelector,
       hitIteratorBuffer);
   VKLHit hit;
@@ -90,11 +92,8 @@ void Isosurfaces_intersect_kernel(
       ray->primID = Isosurfaces_primID(self, hit.sample);
       ray->t = hit.t;
       ray->u = hit.epsilon; // transport epsilon to postIntersect
-
-      // NOTE(jda) - Initialize ray.Ng with something, even if it's wrong
-      //             (better than garbage). Real normals are computed if DG_NS
-      //             flag is specified to postIntersect()
-      ray->Ng = negate(ray->dir);
+      // transport hit point in *volume local coords* to postIntersect
+      ray->Ng = ray->org + ray->dir * hit.t;
     }
   }
 }
@@ -120,13 +119,9 @@ static void Isosurfaces_postIntersect(const Geometry *uniform geometry,
   Isosurfaces *uniform self = (Isosurfaces * uniform) geometry;
   Volume *uniform volume = Isosurfaces_getVolume(self);
 
-  if (flags & DG_NS) {
-    dg.Ns = Volume_getGradient(volume, dg.P);
-    if (dot(dg.Ns, dg.Ns) < 1e-6f)
-      dg.Ns = neg(ray.dir); // make_vec3f(1.f,0.f,0.f);
-  }
+  if (flags & (DG_NS | DG_NG))
+    dg.Ng = dg.Ns = Volume_getGradient(volume, ray.Ng /* actually local hit */);
 
-  dg.Ng = dg.Ns;
   // convert ray-space epsilon (in ray.u) to object-/world-space using max(dir)
   // instead of costly length; the error is at most sqrt(3)~1.7, quite
   // acceptable for eps

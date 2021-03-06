@@ -3,10 +3,11 @@
 
 #include "Builder.h"
 #include "ospray_testing.h"
+#include "rkcommon/tasking/parallel_for.h"
+#include "rkcommon/utility/random.h"
 // stl
 #include <random>
 #include <vector>
-#include "rkcommon/tasking/parallel_for.h"
 // raw_to_amr
 #include "rawToAMR.h"
 
@@ -109,11 +110,12 @@ cpp::Group GravitySpheres::buildGroup() const
 
     cpp::GeometricModel isoModel(isoGeom);
 
-    if (rendererType == "pathtracer" || rendererType == "scivis") {
+    if (rendererType == "pathtracer" || rendererType == "scivis"
+        || rendererType == "ao") {
       cpp::Material mat(rendererType, "obj");
       mat.setParam("kd", vec3f(1.f));
       mat.setParam("d", 0.5f);
-      if (rendererType == "pathtracer")
+      if (rendererType == "pathtracer" || rendererType == "scivis")
         mat.setParam("ks", vec3f(0.2f));
       mat.commit();
 
@@ -190,8 +192,8 @@ std::vector<float> GravitySpheres::generateVoxels() const
   // create random number distributions for point center and weight
   std::mt19937 gen(randomSeed);
 
-  std::uniform_real_distribution<float> centerDistribution(-1.f, 1.f);
-  std::uniform_real_distribution<float> weightDistribution(0.1f, 0.3f);
+  utility::uniform_real_distribution<float> centerDistribution(-1.f, 1.f);
+  utility::uniform_real_distribution<float> weightDistribution(0.1f, 0.3f);
 
   // populate the points
   std::vector<Point> points(numPoints);
@@ -247,7 +249,7 @@ cpp::Volume GravitySpheres::createStructuredVolume(
 {
   cpp::Volume volume("structuredRegular");
 
-  volume.setParam("gridOrigin", vec3f(-1.f, -1.f, -1.f));
+  volume.setParam("gridOrigin", vec3f(-1.f));
   volume.setParam("gridSpacing", vec3f(2.f / reduce_max(volumeDimensions)));
   volume.setParam("data", cpp::CopiedData(voxels.data(), volumeDimensions));
   volume.commit();
@@ -285,10 +287,14 @@ cpp::Volume GravitySpheres::createAMRVolume(const VoxelArray &voxels) const
   // create an AMR volume and assign attributes
   cpp::Volume volume("amr");
 
+  int toplevelVolDim =
+      reduce_max(volumeDimensions) / std::pow(refinementLevel, numLevels - 1);
+  volume.setParam("gridOrigin", vec3f(-1.f));
+  volume.setParam("gridSpacing", vec3f(2.f / toplevelVolDim));
   volume.setParam("block.data", cpp::CopiedData(blockData));
   volume.setParam("block.bounds", cpp::CopiedData(blockBounds));
   volume.setParam("block.level", cpp::CopiedData(refinementLevels));
-  volume.setParam("block.cellWidth", cpp::CopiedData(cellWidths));
+  volume.setParam("cellWidth", cpp::CopiedData(cellWidths));
 
   volume.commit();
 
