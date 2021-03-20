@@ -19,11 +19,13 @@ add_library(ospray_testing SHARED
   builders/RandomSpheres.cpp
   builders/Streamlines.cpp
   builders/SubdivisionCube.cpp
-  builders/UnstructuredVolume.cpp
+  builders/UnstructuredVolumeSimple.cpp
+  builders/UnstructuredVolumeGen.cpp
   builders/Planes.cpp
   builders/ClippingGeometries.cpp
   builders/ParticleVolume.cpp
   builders/VdbVolume.cpp
+  builders/Transparency.cpp
 
   # regression test scenes
   builders/test_pt_glass.cpp

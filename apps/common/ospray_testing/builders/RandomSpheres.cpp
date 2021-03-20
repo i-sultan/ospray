@@ -3,6 +3,7 @@
 
 #include "Builder.h"
 #include "ospray_testing.h"
+#include "rkcommon/utility/random.h"
 // stl
 #include <random>
 
@@ -44,9 +45,9 @@ cpp::Group Spheres::buildGroup() const
   // create random number distributions for sphere center, radius, and color
   std::mt19937 gen(randomSeed);
 
-  std::uniform_real_distribution<float> centerDistribution(-1.f, 1.f);
-  std::uniform_real_distribution<float> radiusDistribution(0.05f, 0.15f);
-  std::uniform_real_distribution<float> colorDistribution(0.5f, 1.f);
+  utility::uniform_real_distribution<float> centerDistribution(-1.f, 1.f);
+  utility::uniform_real_distribution<float> radiusDistribution(0.05f, 0.15f);
+  utility::uniform_real_distribution<float> colorDistribution(0.5f, 1.f);
 
   // populate the spheres
 
@@ -83,7 +84,7 @@ cpp::Group Spheres::buildGroup() const
     glassMaterial.setParam("attenuationDistance", 0.2f);
     glassMaterial.commit();
     model.setParam("material", glassMaterial);
-  } else if (rendererType == "scivis") {
+  } else if (rendererType == "scivis" || rendererType == "ao") {
     cpp::Material glassMaterial(rendererType.c_str(), "obj");
     glassMaterial.commit();
     model.setParam("material", glassMaterial);

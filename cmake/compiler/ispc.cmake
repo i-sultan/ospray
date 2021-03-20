@@ -2,7 +2,7 @@
 ## SPDX-License-Identifier: Apache-2.0
 
 # ISPC versions to look for, in decending order (newest first)
-set(ISPC_VERSION_WORKING "1.12.0" "1.10.0")
+set(ISPC_VERSION_WORKING "1.14.1")
 list(GET ISPC_VERSION_WORKING -1 ISPC_VERSION_REQUIRED)
 
 if (NOT ISPC_EXECUTABLE)
@@ -58,9 +58,6 @@ if(NOT ISPC_VERSION)
   mark_as_advanced(ISPC_EXECUTABLE)
 endif()
 
-if ("${ISPC_VERSION}" STREQUAL "1.11.0")
-  message(FATAL_ERROR "ISPC v1.11.0 is incompatible with OSPRay.")
-endif()
 message(STATUS "Found ISPC v${ISPC_VERSION}: ${ISPC_EXECUTABLE}")
 list(FIND ISPC_VERSION_WORKING ${ISPC_VERSION} ISPC_VERSION_TESTED)
 if (ISPC_VERSION_TESTED EQUAL -1)
@@ -102,6 +99,12 @@ endmacro ()
 
 macro (ispc_compile)
   set(ISPC_ADDITIONAL_ARGS "")
+  if (OSPRAY_STRICT_BUILD)
+    list(APPEND ISPC_ADDITIONAL_ARGS --wno-perf)
+  else()
+    list(APPEND ISPC_ADDITIONAL_ARGS --woff)
+  endif()
+
   set(ISPC_TARGETS ${OSPRAY_ISPC_TARGET_LIST})
 
   set(ISPC_TARGET_EXT ${CMAKE_CXX_OUTPUT_EXTENSION})
@@ -137,11 +140,11 @@ macro (ispc_compile)
   string(REPLACE " " "$<SEMICOLON>" ISPC_OPT_FLAGS "${ISPC_OPT_FLAGS}")
 
   if (NOT WIN32)
-    set(ISPC_ADDITIONAL_ARGS ${ISPC_ADDITIONAL_ARGS} --pic)
+    list(APPEND ISPC_ADDITIONAL_ARGS --pic)
   endif()
 
   if (NOT OSPRAY_DEBUG_BUILD)
-    set(ISPC_ADDITIONAL_ARGS ${ISPC_ADDITIONAL_ARGS} --opt=disable-assertions)
+    list(APPEND ISPC_ADDITIONAL_ARGS --opt=disable-assertions)
   endif()
 
   foreach(src ${ARGN})
@@ -193,7 +196,6 @@ macro (ispc_compile)
       --addressing=${OSPRAY_ISPC_ADDRESSING}
       ${ISPC_OPT_FLAGS}
       --target=${ISPC_TARGET_ARGS}
-      --woff
       --opt=fast-math
       ${ISPC_ADDITIONAL_ARGS}
       -h ${ISPC_TARGET_DIR}/${dir}/${fname}_ispc.h

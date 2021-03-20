@@ -1,4 +1,4 @@
-// Copyright 2009-2020 Intel Corporation
+// Copyright 2009-2021 Intel Corporation
 // SPDX-License-Identifier: Apache-2.0
 
 #include "PathTracer.h"
@@ -8,6 +8,7 @@
 #include "geometry/GeometricModel.h"
 #include "lights/Light.h"
 // ispc exports
+#include "common/World_ispc.h"
 #include "render/pathtracer/GeometryLight_ispc.h"
 #include "render/pathtracer/PathTracer_ispc.h"
 #include "render/pathtracer/materials/Material_ispc.h"
@@ -21,19 +22,13 @@ PathTracer::PathTracer()
   ispcEquivalent = ispc::PathTracer_create(this);
 }
 
-PathTracer::~PathTracer()
-{
-  destroyGeometryLights();
-  ispc::PathTracer_destroy(getIE());
-  ispcEquivalent = nullptr;
-}
-
 std::string PathTracer::toString() const
 {
   return "ospray::PathTracer";
 }
 
-void PathTracer::generateGeometryLights(const World &world)
+void PathTracer::generateGeometryLights(
+    const World &world, std::vector<void *> &lightArray)
 {
   if (!world.instances)
     return;
@@ -88,27 +83,24 @@ void PathTracer::generateGeometryLights(const World &world)
   }
 }
 
-void PathTracer::destroyGeometryLights()
-{
-  for (size_t i = 0; i < geometryLights; i++)
-    ispc::GeometryLight_destroy(lightArray[i]);
-}
-
 void PathTracer::commit()
 {
   Renderer::commit();
+  rendererValid = false;
 
   const int32 rouletteDepth = getParam<int>("roulettePathLength", 5);
   const int32 numLightSamples = getParam<int>("lightSamples", -1);
   const float maxRadiance = getParam<float>("maxContribution", inf);
   vec4f shadowCatcherPlane = getParam<vec4f>("shadowCatcherPlane", vec4f(0.f));
   useGeometryLights = getParam<bool>("geometryLights", true);
+  const bool bgRefraction = getParam<bool>("backgroundRefraction", false);
 
   ispc::PathTracer_set(getIE(),
       rouletteDepth,
       maxRadiance,
       (ispc::vec4f &)shadowCatcherPlane,
-      numLightSamples);
+      numLightSamples,
+      bgRefraction);
 }
 
 void *PathTracer::beginFrame(FrameBuffer *, World *world)
@@ -116,12 +108,14 @@ void *PathTracer::beginFrame(FrameBuffer *, World *world)
   if (!world)
     return nullptr;
 
-  destroyGeometryLights();
-  lightArray.clear();
-  geometryLights = 0;
+  if (world->pathtracerDataValid && rendererValid)
+    return nullptr;
+
+  std::vector<void *> lightArray;
+  size_t geometryLights{0};
 
   if (useGeometryLights) {
-    generateGeometryLights(*world);
+    generateGeometryLights(*world, lightArray);
     geometryLights = lightArray.size();
   }
 
@@ -134,9 +128,12 @@ void *PathTracer::beginFrame(FrameBuffer *, World *world)
   }
 
   void **lightPtr = lightArray.empty() ? nullptr : &lightArray[0];
+  ispc::World_setPathtracerData(
+      world->getIE(), lightPtr, lightArray.size(), geometryLights);
 
-  ispc::PathTracer_setLights(
-      getIE(), lightPtr, lightArray.size(), geometryLights);
+  world->pathtracerDataValid = true;
+  rendererValid = true;
+
   return nullptr;
 }
 

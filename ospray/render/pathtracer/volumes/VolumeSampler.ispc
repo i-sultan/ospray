@@ -17,7 +17,7 @@ float delta_tracking(VolumetricModel *uniform vModel,
 {
   uniform unsigned int8 intervalIteratorBuffer[VKL_MAX_INTERVAL_ITERATOR_SIZE];
   VKLIntervalIterator intervalIterator =
-      vklInitIntervalIteratorV(vModel->volume->vklVolume,
+      vklInitIntervalIteratorV(vModel->volume->vklSampler,
           (varying vkl_vec3f *)&o,
           (varying vkl_vec3f *)&w,
           (varying vkl_range1f *)&rInterval,
@@ -79,6 +79,7 @@ float volumeSampleFreePath(const PathState &pathState,
   // Get volume intervals
   Ray volumeRay = ray;
   VolumeIntervals volumeIntervals;
+  allocVolumeIntervals(volumeIntervals);
   traceVolumeRay(world, volumeRay, volumeIntervals);
 
   // Iterate through volume intervals
@@ -139,6 +140,7 @@ float volumeSampleFreePath(const PathState &pathState,
       }
     }
   }
+  freeVolumeIntervals(volumeIntervals);
   return min_dist;
 }
 
@@ -152,6 +154,7 @@ float volumeTransmittance(const PathState &pathState,
   // Get volume intervals
   Ray volumeRay = ray;
   VolumeIntervals volumeIntervals;
+  allocVolumeIntervals(volumeIntervals);
   traceVolumeRay(world, volumeRay, volumeIntervals);
 
   // Iterate through volume intervals
@@ -197,5 +200,6 @@ float volumeTransmittance(const PathState &pathState,
       }
     }
   }
+  freeVolumeIntervals(volumeIntervals);
   return transmittance;
 }

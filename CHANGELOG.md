@@ -1,11 +1,108 @@
 Version History
 ---------------
 
+### Changes in v2.5.0:
+
+-   Add native support for cones or cylinders with curves geometry of
+    type `OSP_DISJOINT`, requiring minimum version 3.12.0 of Embree
+-   Replaced OSPRay's internal implementation of round linear curves by
+    Embree's native implementation. Internal surfaces at joints are now
+    correctly removed, leading to higher quality renderings with
+    transparency, at the cost of intersection performance
+-   SciVis renderer improvements:
+    -   Colored transparency, colored shadows
+    -   Light sources are visible including HDRI Light environment map
+-   The MPI module is now distributed as part of OSPRay in the modules
+    directory
+    -   The socket-based communication layer has been removed
+-   Add `intensityQuantity` parameter to light sources to control the
+    interpretation and convertion of the `intensity` into a radiative
+    quantity
+-   OSPRay now requires minimum Open VKL v0.12.0 to bring the following
+    improvements: 
+    -   Better default sampling rate for scaled volumes, improving
+        performance
+    -   Higher robustness for axis-aligned rays
+-   Removed limit on the number of volumes (both overlapped and separate)
+    that a ray can intersect while rendering. Now it is limited by
+    available memory only.
+-   Move to OIDN v1.3.0 to bring the following improvements:
+    -   Improved denoising quality (sharpness of fine details, fewer
+        noisy artifacts)
+    -   Slightly improved performance and lower memory consumption
+-   Both geometric and volumetric models can now have their child
+    geometry/volume objects rebound using an object parameter
+-   Fix light leaking artifacts at poles of HDRI (and Sun-Sky) light
+-   Add sRGB conversion to `ospExamples` such that the color of the
+    widget for `backgroundColor` actually matches 
+-   Dropping support for MSVC14, new minimum compiler on Windows is
+    MSVC15 (Visual Studio 2017)
+
+### Changes in v2.4.0:
+
+-   The pathtracer optionally allows for alpha blending even if the
+    background is seen through refractive objects like glass, by
+    enabling `backgroundRefraction`
+-   OSPRay now requires minimum Open VKL v0.11.0 to bring the following
+    improvements: 
+    -   Improved rendering performance of VDB volumes
+    -   Added support for configurable iterator depth via the
+        `maxIteratorDepth` parameters for unstructured and particle
+        volumes, improved performance
+    -   Added support for filter modes for structured volumes (regular
+        and spherical)
+-   Expose parameter `horizonExtension` of Sun-sky light, which extends
+    the sky dome by stretching the horizon over the lower hemisphere
+-   Optimize handling of geometry lights by the pathtracer
+-   The optional `denoiser` image operation now respects frame
+    cancellation, requiring Intel® Open Image Denoise with minimum
+    version 1.2.3
+-   Fixed normals of (transformed) isosurfaces
+-   Robust calculation of normals of `boxes` geometry
+-   Clipping geometry is now working correctly with `map_maxDepth`
+    renderer parameter
+-   Using materials in a renderer with a mismatched `renderer_type` no
+    longer causes crashes while rendering
+-   Significant improvements have been made to loading performance in
+    the MPI Offload device. Applications which make large numbers of API
+    calls or create many smaller geometries or volumes should see
+    substantial load time improvements.
+-   MPI module compacts strided data arrays on the app rank before
+    sending
+
 ### Changes in v2.3.0:
 
+-   Re-add SciVis renderer features (the previous version is still
+    available as `ao` renderer)
+    -   Lights are regarded, and thus the OBJ material terms `ks` and
+        `ns` have effect again
+    -   Hard shadows are enabled via the `shadows` parameter
+    -   The control of ambient occlusion changed:
+        -   The `aoIntensity` parameter is replaced by the combined
+            intensity of ambient lights in the `World`
+        -   The effect range is controlled via `aoDistance`
+-   Added support for data arrays with a stride between voxels in
+    volumes
+-   Application thread waiting for finished image via `ospWait`
+    participates in rendering, increasing CPU utilization; via
+    rkcommon v1.5.0
+-   Added `ospray_cpp` compatibility headers for C++ wrappers to
+    understand rkcommon and glm short vector types
+    -   For rkcommon, include `ospray/ospray_cpp/ext/rkcommon.h`
+    -   For glm, include `ospray/ospray_cpp/ext/glm.h`
+    -   Note in debug builds some compilers will not optimize out type
+        trait definitions. This will require users to manually
+        instantiate the glm definitions in one translation unit within
+        the application using `#define OSPRAY_GLM_DEFINITIONS` before
+        including `ext/glm.h`: see `ospTutorialGLM` as an example
+-   Changed parameters to `volume` texture: it now directly accepts the
+    `volume` and the `transferFunction`
 -   Fixed many memory leaks
--   Handle `NaN` during volume sampling, which lead to bounding boxes
+-   Handle `NaN` during volume sampling, which led to bounding boxes
     being visible for some volumes and settings
+-   Depth is now "accumulated" as well, using the minimum
+-   Fix shading for multiple modes of the `debug` renderer
+-   New minimum ISPC version is 1.14.1
 
 ### Changes in v2.2.0:
 
@@ -44,6 +141,15 @@ Version History
     -   Note that while the C API remains the same, the C++ wrappers
         will require some application updates to account for these
         changes
+-   MPI module improved parallelism of framebuffer compression &
+    decompression when collecting the final framebuffer to the head
+    rank. This provides a substantial performance improvement when using
+    just a few ranks or large framebuffers (both in pixel count or
+    channel count).
+-   The MPI module will now default to setting thread affinity off, if
+    no option is selected. This improves thread usage and core
+    assignment of threads in most cases, where no specific options are
+    provided to the MPI runtime.
 -   Fix bug where `ospGetCurrentDevice` would crash if used before
     `ospInit`
 -   Allow `NULL` handles to be passed to `ospDeviceRetain` and
@@ -54,6 +160,9 @@ Version History
 -   Fixed Debug build (which were producing different images)
 -   The path tracer now also regards the renderer materialist when
     creating geometry lights
+-   Fix bug where OSPObject handles where not translated to worker-local
+    pointers when committing an OSPData in the MPIOffloadDevice.
+-   MPI module: Fix handling of `OSP_STRING` parameters
 
 ### Changes in v2.1.1:
 
@@ -94,9 +203,16 @@ Version History
     committed in a valid state
 -   Object factory functions are now registered during module
     initialization via the appropriate `registerType` function
+-   MPI module: Use flush bcasts to allow us to use non-owning views for
+    data transfer. Note that shared `ospData` with strides is currently
+    transmitted as whole
 -   Fix issue with OSPRay ignoring tasking system thread count settings
 -   Fix issue where OSPRay always loaded the ISPC module, even if not
     required
+-   Fixes for MPI module
+    - Fix member variable type for bcast
+    - Fix incorrect data size computation in `offload` device
+    - Fix large data chunking support for MPI Bcast
 -   OSPRay now requires minimum Open VKL v0.9.0
 
 ### Changes in v2.0.1:
@@ -132,7 +248,7 @@ Version History
         function parameters instead of setting some as renderer params
     -   `ospRenderFrame` is now asynchronous, where the task is managed
         through a returned `OSPFuture` handle
-    -   The heirarchy of objets in a scene are now more granular to
+    -   The hierarchy of objects in a scene are now more granular to
         aid in scene construction flexibility and reduce potential
         object duplication
     -   Type-specific parameter setting functions have been consolidated
@@ -164,11 +280,13 @@ Version History
     is required to build OSPRay
 -   The MPI module is now a separate repository, which also contains all
     MPI distributed rendering documentation
--   Log levels are now controled with enums and named strings (where applicable)
-    -   A new flag was also introduced which turns all OSP_LOG_WARNING messages
-        into errors, which are submitted to the error callback instead of the
-        message callback
-    -   Any unused parameters an object ignores now emit a warning message
+-   Log levels are now controled with enums and named strings (where
+    applicable)
+    -   A new flag was also introduced which turns all OSP_LOG_WARNING
+        messages into errors, which are submitted to the error callback
+        instead of the message callback
+    -   Any unused parameters an object ignores now emit a warning
+        message
 -   New support for volumes in the `pathtracer`
     -   Several parameters are available for performance/quality
         trade-offs for both photorealistic and scientific visualization
@@ -176,8 +294,8 @@ Version History
 -   Simplification of the SciVis renderer
     -   Fixed AO lighting and simple ray marched volume rendering for
         ease of use and performance
--   Overlapping volumes are now supported in both the `pathtracer` and `scivis`
-    renderers
+-   Overlapping volumes are now supported in both the `pathtracer` and
+    `scivis` renderers
 -   New API call for querying the bounds of objects (`OSPWorld`,
     `OSPInstance`, and `OSPGroup`)
 -   Lights now exist as a parameter to the world instead of the renderer
@@ -197,26 +315,55 @@ Version History
     instead
 -   Triangle mesh and Quad mesh are superseded by the `mesh` geometry
 -   Applications need to use the various error reporting methods to
-    check wether the creation (via `ospNew...`) of objects failed; a
+    check whether the creation (via `ospNew...`) of objects failed; a
     returned `NULL` is not a special handle anymore to signify an error
 -   Changed module init methods to facilitate version checking:
     `extern "C" OSPError ospray_module_init_<name>(int16_t versionMajor, int16_t versionMinor, int16_t versionPatch)`
 -   The `map_backplate` texture is supported in all renderers and does
     not hide lights in infinity (like the HDRI light) anymore;
-    explicitely make lights in`visible` if this is needed
+    explicitly make lights in`visible` if this is needed
 -   Changed the computation of variance for adaptive accumulation to be
     independent of `TILE_SIZE`, thus `varianceThreshold` needs to be
-    adapted if using a different TILE_SIZE than default 64
--   `OSPGeometricModel` now has the option to index a renderer-global material
-    list that lives on the renderer, allowing scenes to avoid renderer-specific
-    materials
--   Object type names and parameters all now follow the camel-case convention
--   New `ospExamples` app which consolidates previous interactive apps into one
+    adapted if using a different `TILE_SIZE` than default 64
+-   `OSPGeometricModel` now has the option to index a renderer-global
+    material list that lives on the renderer, allowing scenes to avoid
+    renderer-specific materials
+-   Object type names and parameters all now follow the camel-case
+    convention
+-   New `ospExamples` app which consolidates previous interactive apps
+    into one
 -   New `ospBenchmark` app which implements a runnable benchmark suite
 -   Known issues:
     -   ISPC v1.11.0 and Embree v3.6.0 are both incompatible with OSPRay
         and should be avoided (OSPRay should catch this during CMake
         configure)
+-   MPI module
+    -   The MPI module is now provided separately from the main OSPRay
+        repository
+    -   Users can now extend OSPRay with custom distributed renderers
+        and compositing operations, by extending
+        `ospray::mpi::DistributedRenderer` and the
+        `ospray::mpi::TileOperation`, respectively. See the
+        `ospray::mpi::DistributedRaycastRenderer` for an example to
+        start from.
+    -   The MPI Offload device can now communicate over sockets, allowing
+        for remote rendering on clusters in the listen/connect mode
+    -   Data and commands are now sent asynchronously to the MPI workers
+        in the Offload device, overlapping better with application work.
+        The number of data copies performed has also been significantly
+        reduced, and should improve load times
+    -   The MPI Distributed device will now infer the rank's local data
+        bounds based on the volumes and geometry specified if no bounding
+        boxes are specified
+    -   When specifying custom bounds on each rank IDs are no longer
+        required, and ranks sharing data will be determined by finding
+        any specifying the same bounding boxes. This will also be done
+        if no bounds are specified, allowing automatic image and hybrid
+        parallel rendering.
+    -   The MPI Distributed device can now be used for image-parallel
+        rendering (e.g., same as offload), where now each application
+        can load data in parallel. See the
+        `ospMPIDistributedTutorialReplicatedData` for an example.
 
 ### Changes in v1.8.5:
 

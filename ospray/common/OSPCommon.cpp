@@ -1,11 +1,17 @@
-// Copyright 2009-2020 Intel Corporation
+// Copyright 2009-2021 Intel Corporation
 // SPDX-License-Identifier: Apache-2.0
+
+// must be first
+#define OSPRAY_RKCOMMON_DEFINITIONS
+#include "ospray/ospray_cpp/ext/rkcommon.h"
 
 #include "OSPCommon.h"
 #include "api/Device.h"
 
+#include "rkcommon/containers/AlignedVector.h"
 #include "rkcommon/utility/StringManip.h"
 
+#include <cassert>
 #include <map>
 
 namespace ospray {
@@ -19,7 +25,50 @@ extern "C" void *malloc64(size_t size)
 /*! 64-bit malloc. allows for alloc'ing memory larger than 4GB */
 extern "C" void free64(void *ptr)
 {
-  return alignedFree(ptr);
+  alignedFree(ptr);
+}
+
+namespace {
+
+using TLSPool = containers::AlignedVector<uint8_t>;
+thread_local std::vector<TLSPool> tlsStack;
+thread_local size_t topIndex = 0; // TLS stack top index
+} // namespace
+
+extern "C" void *pushTLS(size_t size)
+{
+  // Grow stack
+  topIndex++;
+  if (topIndex > tlsStack.size())
+    tlsStack.resize(topIndex);
+
+  // Grow pool
+  TLSPool &tp = tlsStack[topIndex - 1];
+  tp.resize(size);
+  return tp.data();
+}
+
+extern "C" void *reallocTLS(void *ptr, size_t size)
+{
+  // Silence 'unused variable' warning
+  (void)ptr;
+
+  // Grow pool
+  TLSPool &tp = tlsStack[topIndex - 1];
+  assert(ptr == tp.data());
+  tp.resize(size);
+  return tp.data();
+}
+
+extern "C" void popTLS(void *ptr)
+{
+  // Silence 'unused variable' warning
+  (void)ptr;
+
+  // Lower stack pointer
+  assert(topIndex > 0);
+  assert(ptr == tlsStack[topIndex - 1].data());
+  topIndex--;
 }
 
 WarnOnce::WarnOnce(const std::string &s, uint32_t postAtLogLevel) : s(s)
@@ -209,8 +258,20 @@ size_t sizeOf(OSPDataType type)
     return sizeof(vec3uc);
   case OSP_VEC4UC:
     return sizeof(vec4uc);
+  case OSP_VEC2C:
+    return sizeof(vec2c);
+  case OSP_VEC3C:
+    return sizeof(vec3c);
+  case OSP_VEC4C:
+    return sizeof(vec4c);
   case OSP_SHORT:
     return sizeof(int16);
+  case OSP_VEC2S:
+    return sizeof(vec2s);
+  case OSP_VEC3S:
+    return sizeof(vec3s);
+  case OSP_VEC4S:
+    return sizeof(vec4s);
   case OSP_USHORT:
     return sizeof(uint16);
   case OSP_VEC2US:
@@ -261,6 +322,12 @@ size_t sizeOf(OSPDataType type)
     return sizeof(vec4f);
   case OSP_DOUBLE:
     return sizeof(double);
+  case OSP_VEC2D:
+    return sizeof(vec2d);
+  case OSP_VEC3D:
+    return sizeof(vec3d);
+  case OSP_VEC4D:
+    return sizeof(vec4d);
   case OSP_BOX1I:
     return sizeof(box1i);
   case OSP_BOX2I:
@@ -312,6 +379,12 @@ OSPDataType typeOf(const char *string)
     return (OSP_VEC3F);
   if (strcmp(string, "vec4f") == 0)
     return (OSP_VEC4F);
+  if (strcmp(string, "vec2d") == 0)
+    return (OSP_VEC2D);
+  if (strcmp(string, "vec3d") == 0)
+    return (OSP_VEC3D);
+  if (strcmp(string, "vec4d") == 0)
+    return (OSP_VEC4D);
   if (strcmp(string, "int") == 0)
     return (OSP_INT);
   if (strcmp(string, "vec2i") == 0)
@@ -328,8 +401,20 @@ OSPDataType typeOf(const char *string)
     return (OSP_VEC3UC);
   if (strcmp(string, "vec4uc") == 0)
     return (OSP_VEC4UC);
+  if (strcmp(string, "vec2c") == 0)
+    return (OSP_VEC2C);
+  if (strcmp(string, "vec3c") == 0)
+    return (OSP_VEC3C);
+  if (strcmp(string, "vec4c") == 0)
+    return (OSP_VEC4C);
   if (strcmp(string, "short") == 0)
     return (OSP_SHORT);
+  if (strcmp(string, "vec2s") == 0)
+    return (OSP_VEC2S);
+  if (strcmp(string, "vec3s") == 0)
+    return (OSP_VEC3S);
+  if (strcmp(string, "vec4s") == 0)
+    return (OSP_VEC4S);
   if (strcmp(string, "ushort") == 0)
     return (OSP_USHORT);
   if (strcmp(string, "vec2us") == 0)
@@ -406,8 +491,20 @@ std::string stringFor(OSPDataType type)
     return "vec3uc";
   case OSP_VEC4UC:
     return "vec4uc";
+  case OSP_VEC2C:
+    return "vec2c";
+  case OSP_VEC3C:
+    return "vec3c";
+  case OSP_VEC4C:
+    return "vec4c";
   case OSP_SHORT:
     return "short";
+  case OSP_VEC2S:
+    return "vec2s";
+  case OSP_VEC3S:
+    return "vec3s";
+  case OSP_VEC4S:
+    return "vec4s";
   case OSP_USHORT:
     return "ushort";
   case OSP_VEC2US:
@@ -456,6 +553,12 @@ std::string stringFor(OSPDataType type)
     return "vec3f";
   case OSP_VEC4F:
     return "vec4f";
+  case OSP_VEC2D:
+    return "vec2d";
+  case OSP_VEC3D:
+    return "vec3d";
+  case OSP_VEC4D:
+    return "vec4d";
   case OSP_DOUBLE:
     return "double";
   case OSP_BOX1I:
@@ -574,6 +677,25 @@ size_t sizeOf(OSPTextureFormat format)
   throw std::runtime_error(error.str());
 }
 
+size_t sizeOf(OSPFrameBufferFormat format)
+{
+  size_t bytes = 0;
+
+  switch (format) {
+  case OSP_FB_RGBA8:
+  case OSP_FB_SRGBA:
+    bytes = sizeof(uint32_t);
+    break;
+  case OSP_FB_RGBA32F:
+    bytes = sizeof(vec4f);
+    break;
+  default:
+    break;
+  }
+
+  return bytes;
+}
+
 uint32_t logLevel()
 {
   return ospray::api::Device::current->logLevel;
@@ -582,25 +704,32 @@ uint32_t logLevel()
 OSPError loadLocalModule(const std::string &name)
 {
   std::string libName = "ospray_module_" + name;
-  loadLibrary(libName, false);
+  try {
+    loadLibrary(libName, false);
+  } catch (const std::exception &e) {
+    handleError(OSP_INVALID_OPERATION, e.what());
+    return OSP_INVALID_OPERATION;
+  } catch (...) {
+    return OSP_INVALID_OPERATION;
+  }
 
   std::string initSymName = "ospray_module_init_" + name;
   void *initSym = getSymbol(initSymName);
   if (!initSym) {
-    throw std::runtime_error(
-        "#osp:api: could not find module initializer " + initSymName);
+    handleError(OSP_INVALID_OPERATION,
+        "Could not find module initializer " + initSymName);
+    unloadLibrary(libName);
+    return OSP_INVALID_OPERATION;
   }
 
   auto initMethod = (OSPError(*)(int16_t, int16_t, int16_t))initSym;
-
-  if (!initMethod)
-    return OSP_INVALID_OPERATION;
-
   auto err = initMethod(
       OSPRAY_VERSION_MAJOR, OSPRAY_VERSION_MINOR, OSPRAY_VERSION_PATCH);
 
-  if (err != OSP_NO_ERROR)
+  if (err != OSP_NO_ERROR) {
+    handleError(err, "Initialization of module " + name + " failed");
     unloadLibrary(libName);
+  }
 
   return err;
 }
@@ -695,37 +824,6 @@ OSPTYPEFOR_DEFINITION(unsigned long long);
 OSPTYPEFOR_DEFINITION(float);
 OSPTYPEFOR_DEFINITION(double);
 
-OSPTYPEFOR_DEFINITION(vec2uc);
-OSPTYPEFOR_DEFINITION(vec3uc);
-OSPTYPEFOR_DEFINITION(vec4uc);
-OSPTYPEFOR_DEFINITION(vec2i);
-OSPTYPEFOR_DEFINITION(vec3i);
-OSPTYPEFOR_DEFINITION(vec4i);
-OSPTYPEFOR_DEFINITION(vec2ui);
-OSPTYPEFOR_DEFINITION(vec3ui);
-OSPTYPEFOR_DEFINITION(vec4ui);
-OSPTYPEFOR_DEFINITION(vec2l);
-OSPTYPEFOR_DEFINITION(vec3l);
-OSPTYPEFOR_DEFINITION(vec4l);
-OSPTYPEFOR_DEFINITION(vec2ul);
-OSPTYPEFOR_DEFINITION(vec3ul);
-OSPTYPEFOR_DEFINITION(vec4ul);
-OSPTYPEFOR_DEFINITION(vec2f);
-OSPTYPEFOR_DEFINITION(vec3f);
-OSPTYPEFOR_DEFINITION(vec4f);
-OSPTYPEFOR_DEFINITION(box1i);
-OSPTYPEFOR_DEFINITION(box2i);
-OSPTYPEFOR_DEFINITION(box3i);
-OSPTYPEFOR_DEFINITION(box4i);
-OSPTYPEFOR_DEFINITION(box1f);
-OSPTYPEFOR_DEFINITION(box2f);
-OSPTYPEFOR_DEFINITION(box3f);
-OSPTYPEFOR_DEFINITION(box4f);
-OSPTYPEFOR_DEFINITION(linear2f);
-OSPTYPEFOR_DEFINITION(linear3f);
-OSPTYPEFOR_DEFINITION(affine2f);
-OSPTYPEFOR_DEFINITION(affine3f);
-
 OSPTYPEFOR_DEFINITION(OSPObject);
 OSPTYPEFOR_DEFINITION(OSPCamera);
 OSPTYPEFOR_DEFINITION(OSPData);
@@ -748,6 +846,9 @@ OSPTYPEFOR_DEFINITION(OSPWorld);
 OSPDIMENSIONALITYOF_DEFINITION(OSP_VEC2UC);
 OSPDIMENSIONALITYOF_DEFINITION(OSP_VEC3UC);
 OSPDIMENSIONALITYOF_DEFINITION(OSP_VEC4UC);
+OSPDIMENSIONALITYOF_DEFINITION(OSP_VEC2C);
+OSPDIMENSIONALITYOF_DEFINITION(OSP_VEC3C);
+OSPDIMENSIONALITYOF_DEFINITION(OSP_VEC4C);
 OSPDIMENSIONALITYOF_DEFINITION(OSP_VEC2I);
 OSPDIMENSIONALITYOF_DEFINITION(OSP_VEC3I);
 OSPDIMENSIONALITYOF_DEFINITION(OSP_VEC4I);
@@ -763,6 +864,9 @@ OSPDIMENSIONALITYOF_DEFINITION(OSP_VEC4UL);
 OSPDIMENSIONALITYOF_DEFINITION(OSP_VEC2F);
 OSPDIMENSIONALITYOF_DEFINITION(OSP_VEC3F);
 OSPDIMENSIONALITYOF_DEFINITION(OSP_VEC4F);
+OSPDIMENSIONALITYOF_DEFINITION(OSP_VEC2D);
+OSPDIMENSIONALITYOF_DEFINITION(OSP_VEC3D);
+OSPDIMENSIONALITYOF_DEFINITION(OSP_VEC4D);
 OSPDIMENSIONALITYOF_DEFINITION(OSP_BOX1I);
 OSPDIMENSIONALITYOF_DEFINITION(OSP_BOX2I);
 OSPDIMENSIONALITYOF_DEFINITION(OSP_BOX3I);
